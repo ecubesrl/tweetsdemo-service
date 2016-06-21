@@ -43,8 +43,6 @@ class Master(Script):
     Directory(status_params.tweet_piddir, mode=0755, owner='root', group='root', recursive=True)
 
     Execute('echo Copying script to ' + params.tweet_installdir)
-    Execute('cp -f ' + params.service_scriptsdir + 'setup_nifi.sh ' + params.tweet_installdir)
-    Execute('cp -f ' + params.service_scriptsdir + 'setup_twitter.sh ' + params.tweet_installdir)
     Execute('cp -f ' + params.service_scriptsdir + 'twitter_dashboard_v5.xml ' + params.tweet_installdir)
     Execute('cp -f ' + params.service_scriptsdir + 'banana_default.json ' + params.tweet_installdir)
     Execute('cp -f ' + params.service_scriptsdir + 'kiwi_default.json ' + params.tweet_installdir)
@@ -97,7 +95,7 @@ class Master(Script):
     import params
     import status_params
     self.configure(env)
-    config_nifi_script = os.path.join(params.tweet_installdir,'setup_nifi.sh')
+    #config_nifi_script = os.path.join(params.tweet_installdir,'setup_nifi.sh')
     nifi_template_xml = os.path.join(params.tweet_installdir,'twitter_dashboard_v5.xml')
     Execute ('pip install requests')
     if not os.path.exists(status_params.tweet_piddir):
@@ -105,16 +103,62 @@ class Master(Script):
     #To change. Really bad!!!
     Execute ('echo Wait 30 seconds to let NiFi starts')
     Execute ('sleep 30')
-    Execute ('chmod +x ' + config_nifi_script)
-    Execute (config_nifi_script + ' ' + params.tweet_installdir + ' ' + nifi_template_xml + ' twitter_dashboard')
-    config_twitter_script = os.path.join(params.tweet_installdir,'setup_twitter.sh')
-    Execute ('chmod +x ' + config_twitter_script)
-    Execute (config_twitter_script + ' ' + params.tweet_installdir + ' GetTwitter ')
+    import requests
+    # Setup NiFi
+    nifi_controller_api = 'http://' + params.nifi_master_host + ':' + str(params.nifi_port) + '/nifi-api/controller/'
+    p_group = requests.get(nifi_controller_api+'search-results?q=twitter_dashboard').json()["searchResultsDTO"]["processGroupResults"]
+    if len(p_group) != 0 :
+      Execute('echo ' +  "Process group " + p_group[0]["id"] + " already exists.")
+    else:
+      import xml.etree.ElementTree
+      template_name=xml.etree.ElementTree.parse(nifi_template_xml).find(".//name").text
+      template_id=""
+      for template in requests.get(nifi_controller_api+'templates').json()["templates"] :
+        if template["name"] == template_name:
+          template_id = template["id"]
+          break
+      
+      if template_id == "":
+        tmplXML = requests.post(nifi_controller_api+'templates', files={'template':open(nifi_template_xml,'rb')})
+        template_id = xml.etree.ElementTree.fromstring(tmplXML.text).find(".//id").text
+      
+      revision = requests.get(nifi_controller_api + 'revision').json()["revision"]["version"]
+      Execute('echo ' +  str(revision) )
+      r = requests.post(nifi_controller_api + 'process-groups/root/template-instance', data={'version':revision, 'clientId':'demotweet', 'templateId':template_id, 'originX':0, 'originY':0, 'process-group-id':'root'})
+      p_group_id = r.json()["contents"]["processGroups"][0]["id"]
+      Execute('echo "Created process group '+ str(p_group_id) + '"')
+    #Execute ('chmod +x ' + config_nifi_script)
+    #Execute (config_nifi_script + ' ' + params.tweet_installdir + ' ' + nifi_template_xml + ' ')
+    #config_twitter_script = os.path.join(params.tweet_installdir,'setup_twitter.sh')
+    #Setup twitter
+    tweet_processor  = requests.get(nifi_controller_api+'search-results?q=GetTwitter').json()["searchResultsDTO"]["processorResults"][0]
+    revision = requests.get(nifi_controller_api + 'revision').json()["revision"]["version"]
+    Execute('echo "Tweet processor id: ' + str(tweet_processor["id"]) + '"')
+    Execute('echo "Tweet group id: ' + str(tweet_processor["groupId"]) + '"')
+    JSON="""{"revision": 
+{"clientId": "demotweet","version":""" + str(revision) + """}, 
+"processor": 
+{"id": \"""" + str(tweet_processor["id"]) + """", 
+"config": 
+{"properties": 
+{"Consumer Key": \"""" +str(params.consumer_key)+"""",
+"Consumer Secret": \""""+str(params.consumer_secret)+"""",
+"Access Token": \""""+str(params.access_token)+"""",
+"Access Token Secret": \""""+str(params.access_secret)+"""",
+"Terms to Filter On": \""""+str(params.filter_terms)+""""
+}}}}"""
+    requests.put(nifi_controller_api + "process-groups/"+tweet_processor["groupId"]+"/processors/"+tweet_processor["id"],data=JSON, headers = {'Content-type': 'application/json' })
+    revision = requests.get(nifi_controller_api + 'revision').json()["revision"]["version"]
+    requests.put(nifi_controller_api + 'process-groups/root/process-group-references/' + tweet_processor["groupId"], data={'running':'true', 'version':revision, 'clientId':'demotweet'})
+    f=open(status_params.tweet_pidfile, 'w')
+    f.write(tweet_processor["groupId"])
+    f.close()
+    #Execute ('chmod +x ' + config_twitter_script)
+    #Execute (config_twitter_script + ' ' + params.tweet_installdir + ' GetTwitter ')
 
   def status(self, env):
     import status_params
     self.check_flow_running(status_params.tweet_pidfile, "sandbox.hortonworks.com", "9090")
-
 
 
 
