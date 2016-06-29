@@ -1,11 +1,11 @@
 #### An Ambari service to deploy a real-word data ingestion from Twitter to Solr with NiFi
-This tweets demo service show real time tweets on a dashbord. It requires Kafka, NiFi and Solr already installed and started on the Hortonworks Sandbox
+This tweets demo service shows real time tweets on a dashboard. It requires HDFS, Kafka, NiFi and Solr already installed and started on the Hortonworks Sandbox. You also need a Twitter account and a Twitter application token (follow the instructions below to create one).
 
-Pre-reqs:
-  - HDP Sandbox 2.4.x
-  - The service requires that Kafka and Solr are started on the sandbox.
-  - Apache NiFi must be install and started; use [this](https://github.com/abajwa-hw/ambari-nifi-service) link to install Apache NiFi.
-  - You need admin rights to the sandbox. To enable admin access on the sandbox follow the instructions below:
+Prerequisites:
+  - HDP Sandbox 2.4
+  - The service requires that HDFS, Kafka and Solr are started on the Sandbox.
+  - Apache NiFi must be installed and started; use [this](https://github.com/abajwa-hw/ambari-nifi-service) guide to install Apache NiFi.
+  - You need admin rights to the Sandbox. To enable admin access on the Sandbox follow the instructions below:
     - Login to the sandbox
     - Run the following command:
 ```
@@ -13,18 +13,33 @@ ambari-admin-password-reset
 ```
 
 Limitations:
-  - Currently, this demo runs only on a Sandbox, do not use it in production cluster. 
+  - Currently, this demo runs only on a HDP Sandbox, do not use it in production clusters. 
   - It does not support Ambari/HDP upgrade process and will cause upgrade problems if not removed prior to upgrade.
+
+Credits:
+  - Davide Isoardi: data modelling, NiFi workflows and Solr collections 
+  - Davide Vergari: demo architecture and Ambari Service
+
+Future improvments:
+  - Giuseppe Maldarizzi: Storm topologies and custom real time visualization
+  - Marco Gaido: Spark machine learning and Python improvments to Ambari Service
 
 ##### Setup steps
 
-- Download HDP 2.4 sandbox VM image (HDP_2.4_virtualbox_v3) from [Hortonworks website](http://hortonworks.com/products/hortonworks-sandbox/)
+- Download HDP 2.4 Sandbox Virtual Machine Image from [Hortonworks website](http://hortonworks.com/products/hortonworks-sandbox/)
 - Import Hortonworks Sandbox into your virtualization engine.
 - Start the VM.
-- If using VirtualBox, add port forwarding to port 9090 to allow your browser access NiFi Web UI.
-- Install and start Apache NiFi following [these](https://github.com/abajwa-hw/ambari-nifi-service) instructions.
+- If using VirtualBox, add port forwarding to port 9090 to allow your browser access NiFi Web UI if not already configured. Rembember to add also the following line to your hosts file:
+```
+127.0.0.1 sandbox.hortonworks.com localhost
+``` 
+- If using VMWare find the IP address of the VM and add an entry into your machines hosts file. For example:
+```
+192.168.191.241 sandbox.hortonworks.com sandbox 
+```
+- Install and start Apache NiFi following [these](https://github.com/abajwa-hw/ambari-nifi-service) instructions (if not already installed).
 - **Make sure Kafka is running and out of maintenance mode**. 
-- Start Solr by connecting via SSH and run the following command:
+- Start Solr by connecting via SSH to the VM and run the following command:
 ```
 /root/start_solr.sh
 ```
@@ -39,12 +54,12 @@ ambari-server restart
 
 On bottom left -> Actions -> Add service -> 'Tweets demo' -> Next -> Next -> Configure service -> Fill required fields -> Next -> Deploy
 
-- Remember to fill the required fields while configuring the demo. You can create your own Twitter access token by following [these](https://dev.twitter.com/oauth/overview/application-owner-access-tokens) instructions.
+- Remember to fill the required fields while configuring the demo. You can create your own Twitter access token by following [these](https://dev.twitter.com/oauth/overview/application-owner-access-tokens) instructions. You can change also following your needs filter_terms fields to grab tweets.
 
 
-- On successful deployment you will see the TWEETDEMO service as part of Ambari stack and will be able to start/stop the service from here:
+- On successful deployment you will see the Tweets Demo service as part of Ambari stack and will be able to start/stop the service from here:
 
-- Connect to the Banana interface to see the tweets http://localhost:8983/solr/kiwi/index.html#/dashboard
+- Connect to the Banana interface to see geo-localized tweets http://sandbox.hortonworks.com:8983/solr/banana/index.html#/dashboard
+- Connect to the Kiwi interface to see all grabbed tweets http://sandbox.hortonworks.com:8983/solr/kiwi/index.html#/dashboard
 
-- Also, you will see a new Process group on the NiFi Web UI with all components started
-
+- Connect to the NiFi interface to take a look at twitter_dashboard Process Group on the NiFi Web UI at http://sandbox.hortonworks.com:9090/nifi/
