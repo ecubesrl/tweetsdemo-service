@@ -1,12 +1,20 @@
 #### An Ambari service to deploy a real-word data ingestion from Twitter to Solr with NiFi
 This tweets demo service shows real time tweets on a dashboard. It requires HDFS, Kafka, NiFi and Solr already installed and started on the Hortonworks Sandbox. You also need a Twitter account and a Twitter application token (follow the instructions below to create one).
 
+##### Credits:
+  - Davide Isoardi: data modelling, NiFi workflows and Solr collections 
+  - Davide Vergari: demo architecture and Ambari Service
+
+Future improvments:
+  - Giuseppe Maldarizzi: Storm topologies and custom real time visualization
+  - Marco Gaido: Spark machine learning and Python improvments to Ambari Service
+
 Prerequisites:
   - HDP Sandbox 2.4
   - The service requires that HDFS, Kafka and Solr are started on the Sandbox.
   - Apache NiFi must be installed and started; use [this](https://github.com/abajwa-hw/ambari-nifi-service) guide to install Apache NiFi.
-  - You need admin rights to the Sandbox. To enable admin access on the Sandbox follow the instructions below:
-    - Login to the sandbox
+  - You need admin rights to Ambari. To enable admin access on Ambari follow the instructions below:
+    - Login to the Sandbox with SSH or via [Shell in a box](http://sandbox.hortonworks.com:4200)
     - Run the following command:
 ```
 ambari-admin-password-reset
@@ -16,13 +24,7 @@ Limitations:
   - Currently, this demo runs only on a HDP Sandbox, do not use it in production clusters. 
   - It does not support Ambari/HDP upgrade process and will cause upgrade problems if not removed prior to upgrade.
 
-Credits:
-  - Davide Isoardi: data modelling, NiFi workflows and Solr collections 
-  - Davide Vergari: demo architecture and Ambari Service
 
-Future improvments:
-  - Giuseppe Maldarizzi: Storm topologies and custom real time visualization
-  - Marco Gaido: Spark machine learning and Python improvments to Ambari Service
 
 ##### Setup steps
 
@@ -44,7 +46,7 @@ Future improvments:
 /root/start_solr.sh
 ```
 - Before proceeding, you may want to wait a few minutes to ensure they stay up reliably or the demo setup may fail. If they do not, you may need to increase the memory/cpus allocated to the VM.
-- Deploy the tweetsdemo-service
+- Deploy the Tweets Demo Ambari service:
 ```
 VERSION=`hdp-select status hadoop-client | sed 's/hadoop-client - \([0-9]\.[0-9]\).*/\1/'`
 git clone https://github.com/ecubesrl/tweetsdemo-service.git /var/lib/ambari-server/resources/stacks/HDP/$VERSION/services/TWEET
@@ -52,7 +54,7 @@ ambari-server restart
 ```
 - Then you can click on 'Add Service' from the 'Actions' dropdown menu in the bottom left of the Ambari dashboard:
 
-On bottom left -> Actions -> Add service -> 'Tweets demo' -> Next -> Next -> Configure service -> Fill required fields -> Next -> Deploy
+On bottom left -> Actions -> Add service -> 'Tweets Demo' -> Next -> Next -> Configure service -> Fill required fields -> Next -> Deploy
 
 - Remember to fill the required fields while configuring the demo. You can create your own Twitter access token by following [these](https://dev.twitter.com/oauth/overview/application-owner-access-tokens) instructions. You can change also following your needs filter_terms fields to grab tweets.
 
