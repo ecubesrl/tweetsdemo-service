@@ -1331,7 +1331,7 @@
     "dropdown_collections": false
   },
   "solr": {
-    "server": "http://localhost:8983/solr/",
+    "server": "http://sandbox.hortonworks.com:8983/solr/",
     "core_name": "twitterAll",
     "core_list": [
       "twitterAll_shard1_replica1",
